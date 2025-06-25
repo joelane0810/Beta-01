@@ -1,0 +1,1744 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  User, Sword, Trophy, Target, Settings, MessageCircle, 
+  Star, Clock, CheckCircle, XCircle, Plus, BarChart3,
+  Crown, Shield, Zap, Heart, Brain, Eye, Dumbbell,
+  Users, DollarSign, Lightbulb, Compass, Home, Edit3,
+  Calendar, TrendingUp, TrendingDown, Minus, Save,
+  Trash2, Link, ChevronRight, Award, Medal, Gift,
+  BookOpen, Code, Palette, Music, Camera, Gamepad2,
+  Languages, Calculator, Wrench, TreePine, X, Check,
+  Archive, Lock, Unlock
+} from 'lucide-react';
+
+const LevelUpApp = () => {
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [questView, setQuestView] = useState('active');
+  const [showChat, setShowChat] = useState(false);
+  const [chatMessage, setChatMessage] = useState('');
+  const [editingField, setEditingField] = useState(null);
+  const [tempValue, setTempValue] = useState('');
+  const [chatMessages, setChatMessages] = useState([]);
+  const [showAddQuest, setShowAddQuest] = useState(false);
+  const [editingResource, setEditingResource] = useState(null);
+  const [editingQuest, setEditingQuest] = useState(null);
+  const [showAddKeyResult, setShowAddKeyResult] = useState(null);
+  const [newKeyResult, setNewKeyResult] = useState({ name: '', target: '', progress: 0 });
+  const [sheetsUrl, setSheetsUrl] = useState('');
+  const [isConnected, setIsConnected] = useState(false);
+
+  const [newQuest, setNewQuest] = useState({
+    name: '',
+    description: '',
+    difficulty: 1,
+    deadline: '',
+    type: 'once',
+    category: 'kiến-tạo',
+    requiredStat: 'AWR',
+    requiredStatValue: 10,
+    linkedGoal: { type: '', id: null },
+    rewards: {
+      exp: 50,
+      statBonus: { stat: 'AWR', value: 2 },
+      skillExp: { category: 'programming', value: 50 }
+    }
+  });
+
+  const [character, setCharacter] = useState({
+    name: 'Người chơi mới',
+    birthYear: new Date().getFullYear() - 25,
+    avatar: '🧙‍♂️',
+    level: 1,
+    exp: 0,
+    expToNext: 100,
+    stats: {
+      WILL: { value: 10, max: 20, color: 'text-purple-400' },
+      PHY: { value: 10, max: 20, color: 'text-red-400' },
+      INT: { value: 10, max: 20, color: 'text-blue-400' },
+      AWR: { value: 10, max: 20, color: 'text-yellow-400' },
+      EXE: { value: 10, max: 20, color: 'text-green-400' }
+    }
+  });
+
+  const [skillTree, setSkillTree] = useState({
+    'programming': {
+      name: 'Lập trình',
+      icon: Code,
+      color: 'text-blue-400',
+      level: 1,
+      exp: 0,
+      expToNext: 100,
+      topSkills: ['Chưa có kỹ năng']
+    },
+    'languages': {
+      name: 'Ngôn ngữ',
+      icon: Languages,
+      color: 'text-green-400',
+      level: 1,
+      exp: 0,
+      expToNext: 100,
+      topSkills: ['Chưa có kỹ năng']
+    },
+    'creative': {
+      name: 'Sáng tạo',
+      icon: Palette,
+      color: 'text-pink-400',
+      level: 1,
+      exp: 0,
+      expToNext: 100,
+      topSkills: ['Chưa có kỹ năng']
+    },
+    'business': {
+      name: 'Kinh doanh',
+      icon: TrendingUp,
+      color: 'text-orange-400',
+      level: 1,
+      exp: 0,
+      expToNext: 100,
+      topSkills: ['Chưa có kỹ năng']
+    }
+  });
+
+  const [resources, setResources] = useState([
+    { 
+      id: 'xã-hội', 
+      name: 'Xã hội', 
+      icon: Users, 
+      color: 'text-blue-400',
+      description: 'Xây dựng quan hệ, kết nối',
+      items: []
+    },
+    { 
+      id: 'tài-chính', 
+      name: 'Tài chính', 
+      icon: DollarSign, 
+      color: 'text-green-400',
+      description: 'Tiền bạc, đầu tư, tài sản',
+      items: []
+    },
+    { 
+      id: 'kiến-tạo', 
+      name: 'Kiến tạo', 
+      icon: Lightbulb, 
+      color: 'text-yellow-400',
+      description: 'Sáng tạo, kỹ năng, kiến thức',
+      items: []
+    },
+    { 
+      id: 'khám-phá', 
+      name: 'Khám phá', 
+      icon: Compass, 
+      color: 'text-purple-400',
+      description: 'Trải nghiệm, học hỏi, chinh phục',
+      items: []
+    }
+  ]);
+
+  const [goals, setGoals] = useState({
+    mission: 'Hãy định nghĩa sứ mệnh cuộc đời của bạn...',
+    yearly: {
+      objective: 'Mục tiêu năm 2025',
+      keyResults: []
+    },
+    quarterly: {
+      objective: 'Mục tiêu quý hiện tại',
+      keyResults: []
+    },
+    monthly: {
+      objective: 'Mục tiêu tháng này',
+      keyResults: []
+    },
+    weekly: {
+      objective: 'Mục tiêu tuần này',
+      keyResults: []
+    }
+  });
+
+  const [quests, setQuests] = useState([]);
+
+  const [questVault, setQuestVault] = useState([]);
+
+  const [achievements, setAchievements] = useState([
+    { id: 1, name: 'Newbie', icon: '🌱', description: 'Bắt đầu hành trình', earned: true, tier: 'bronze', date: new Date().toISOString().split('T')[0] },
+    { id: 2, name: 'Explorer', icon: '🗺️', description: 'Hoàn thành 10 nhiệm vụ', earned: false, tier: 'silver', date: null },
+    { id: 3, name: 'Warrior', icon: '⚔️', description: 'Hoàn thành 25 nhiệm vụ', earned: false, tier: 'gold', date: null },
+    { id: 4, name: 'Master', icon: '🧙‍♂️', description: 'Đạt level 10', earned: false, tier: 'gold', date: null },
+    { id: 5, name: 'Legend', icon: '👑', description: 'Đạt level 25', earned: false, tier: 'legendary', date: null },
+    { id: 6, name: 'Scholar', icon: '📚', description: 'Đọc 100 cuốn sách', earned: false, tier: 'legendary', date: null },
+    { id: 7, name: 'Athlete', icon: '🏃‍♂️', description: 'Chạy 1000km', earned: false, tier: 'silver', date: null },
+    { id: 8, name: 'Creator', icon: '🎨', description: 'Tạo 5 project', earned: false, tier: 'gold', date: null }
+  ]);
+
+  const currentAge = new Date().getFullYear() - character.birthYear;
+  const expPercentage = (character.exp / character.expToNext) * 100;
+
+  const autoSync = () => {
+    console.log('Auto-syncing data to Google Sheets...');
+  };
+
+  const createQuestFromResource = (resourceId) => {
+    setNewQuest(prev => ({ ...prev, category: resourceId }));
+    setShowAddQuest(true);
+  };
+
+  const handleAddKeyResult = (period) => {
+    if (newKeyResult.name.trim()) {
+      const newKR = {
+        id: Date.now(),
+        name: newKeyResult.name,
+        target: newKeyResult.target,
+        progress: newKeyResult.progress
+      };
+      
+      setGoals(prev => ({
+        ...prev,
+        [period]: {
+          ...prev[period],
+          keyResults: [...prev[period].keyResults, newKR]
+        }
+      }));
+      
+      setNewKeyResult({ name: '', target: '', progress: 0 });
+      setShowAddKeyResult(null);
+      autoSync();
+    }
+  };
+
+  const connectGoogleSheets = () => {
+    if (sheetsUrl.trim()) {
+      setIsConnected(true);
+      createDatabaseSchema();
+      autoSync();
+    }
+  };
+
+  const createDatabaseSchema = () => {
+    const schema = {
+      character: character,
+      quests: quests,
+      achievements: achievements,
+      resources: resources,
+      goals: goals,
+      skillTree: skillTree,
+      lastUpdate: new Date().toISOString()
+    };
+    
+    console.log('Tạo database schema:', schema);
+    alert('Đã tạo khung database! Bạn có thể copy dữ liệu này vào Google Sheets:\n\n' + JSON.stringify(schema, null, 2));
+  };
+
+  useEffect(() => {
+    const interval = setInterval(autoSync, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleEdit = (field, currentValue) => {
+    setEditingField(field);
+    setTempValue(currentValue);
+  };
+
+  const handleSave = (field) => {
+    if (field === 'name') {
+      setCharacter(prev => ({ ...prev, name: tempValue }));
+    } else if (field === 'birthYear') {
+      setCharacter(prev => ({ ...prev, birthYear: parseInt(tempValue) }));
+    } else if (field === 'mission') {
+      setGoals(prev => ({ ...prev, mission: tempValue }));
+    }
+    setEditingField(null);
+    autoSync();
+  };
+
+  const handleCancel = () => {
+    setEditingField(null);
+    setTempValue('');
+  };
+
+  const handleEditResource = (resourceId, itemIndex) => {
+    const resource = resources.find(r => r.id === resourceId);
+    setEditingResource({ resourceId, itemIndex, value: resource.items[itemIndex] });
+  };
+
+  const handleSaveResource = () => {
+    setResources(prev => prev.map(resource => 
+      resource.id === editingResource.resourceId 
+        ? { 
+            ...resource, 
+            items: resource.items.map((item, index) => 
+              index === editingResource.itemIndex ? editingResource.value : item
+            )
+          }
+        : resource
+    ));
+    setEditingResource(null);
+    autoSync();
+  };
+
+  const handleAddResource = (resourceId) => {
+    setResources(prev => prev.map(resource => 
+      resource.id === resourceId 
+        ? { ...resource, items: [...resource.items, 'Tài sản mới'] }
+        : resource
+    ));
+    autoSync();
+  };
+
+  const handleDeleteResource = (resourceId, itemIndex) => {
+    setResources(prev => prev.map(resource => 
+      resource.id === resourceId 
+        ? { ...resource, items: resource.items.filter((_, index) => index !== itemIndex) }
+        : resource
+    ));
+    autoSync();
+  };
+
+  const handleAddQuest = () => {
+    const rewardString = `+${newQuest.rewards.exp} EXP, +${newQuest.rewards.statBonus.value} ${newQuest.rewards.statBonus.stat}`;
+    const questToAdd = {
+      id: Date.now(),
+      name: newQuest.name,
+      description: newQuest.description,
+      difficulty: newQuest.difficulty,
+      deadline: newQuest.deadline,
+      reward: rewardString,
+      status: 'todo',
+      category: newQuest.category,
+      requiredStat: newQuest.requiredStat,
+      requiredStatValue: newQuest.requiredStatValue,
+      type: newQuest.type,
+      linkedGoal: newQuest.linkedGoal.type ? newQuest.linkedGoal : null,
+      rewards: newQuest.rewards
+    };
+    setQuests(prev => [...prev, questToAdd]);
+    setNewQuest({
+      name: '',
+      description: '',
+      difficulty: 1,
+      deadline: '',
+      type: 'once',
+      category: 'kiến-tạo',
+      requiredStat: 'AWR',
+      requiredStatValue: 10,
+      linkedGoal: { type: '', id: null },
+      rewards: {
+        exp: 50,
+        statBonus: { stat: 'AWR', value: 2 },
+        skillExp: { category: 'programming', value: 50 }
+      }
+    });
+    setShowAddQuest(false);
+    autoSync();
+  };
+
+  const handleEditQuest = (questId, field, value) => {
+    setQuests(prev => prev.map(quest => 
+      quest.id === questId 
+        ? { ...quest, [field]: value }
+        : quest
+    ));
+    autoSync();
+  };
+
+  const handleDeleteQuest = (questId) => {
+    setQuests(prev => prev.filter(quest => quest.id !== questId));
+    autoSync();
+  };
+
+  const handleCompleteQuest = (questId) => {
+    setQuests(prev => prev.map(quest => 
+      quest.id === questId 
+        ? { ...quest, status: 'completed' }
+        : quest
+    ));
+    
+    const quest = quests.find(q => q.id === questId);
+    if (quest) {
+      const expGain = quest.rewards?.exp || parseInt(quest.reward.match(/\+(\d+) EXP/)?.[1] || 0);
+      
+      setCharacter(prev => {
+        const newExp = prev.exp + expGain;
+        const newLevel = newExp >= prev.expToNext ? prev.level + 1 : prev.level;
+        
+        let newStats = { ...prev.stats };
+        if (quest.rewards?.statBonus) {
+          const { stat, value } = quest.rewards.statBonus;
+          newStats[stat] = {
+            ...newStats[stat],
+            value: Math.min(newStats[stat].value + value, newStats[stat].max)
+          };
+        }
+        
+        return {
+          ...prev,
+          exp: newExp >= prev.expToNext ? newExp - prev.expToNext : newExp,
+          level: newLevel,
+          expToNext: newLevel > prev.level ? prev.expToNext + 500 : prev.expToNext,
+          stats: newStats
+        };
+      });
+      
+      const skillMap = {
+        'kiến-tạo': 'programming',
+        'xã-hội': 'languages', 
+        'khám-phá': 'creative',
+        'tài-chính': 'business'
+      };
+      const skillCategory = skillMap[quest.category];
+      if (skillCategory) {
+        addSkillExp(skillCategory, quest.rewards?.skillExp?.value || 50);
+      }
+      
+      setQuestVault(prev => prev.map(vaultQuest => ({
+        ...vaultQuest,
+        unlocked: vaultQuest.requiredLevel <= character.level
+      })));
+    }
+    autoSync();
+  };
+
+  const handleUnlockVaultQuest = (vaultQuestId) => {
+    const vaultQuest = questVault.find(q => q.id === vaultQuestId);
+    if (vaultQuest) {
+      const newQuest = {
+        id: Date.now(),
+        name: vaultQuest.name,
+        description: vaultQuest.description,
+        difficulty: vaultQuest.difficulty,
+        deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        reward: vaultQuest.reward,
+        status: 'todo',
+        category: vaultQuest.category,
+        requiredStat: 'AWR',
+        linkedGoal: null
+      };
+      setQuests(prev => [...prev, newQuest]);
+      setQuestVault(prev => prev.filter(q => q.id !== vaultQuestId));
+    }
+    autoSync();
+  };
+
+  const handleSendMessage = () => {
+    if (chatMessage.trim()) {
+      setChatMessages(prev => [...prev, { 
+        id: Date.now(), 
+        text: chatMessage, 
+        timestamp: new Date().toLocaleTimeString('vi-VN') 
+      }]);
+      setChatMessage('');
+    }
+  };
+
+  const addSkillExp = (categoryId, exp) => {
+    setSkillTree(prev => ({
+      ...prev,
+      [categoryId]: {
+        ...prev[categoryId],
+        exp: prev[categoryId].exp + exp,
+        level: prev[categoryId].exp + exp >= prev[categoryId].expToNext 
+          ? prev[categoryId].level + 1 
+          : prev[categoryId].level
+      }
+    }));
+    autoSync();
+  };
+
+  const getDifficultyStars = (difficulty) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star 
+        key={i} 
+        className={`w-4 h-4 ${i < difficulty ? 'text-yellow-400 fill-current' : 'text-gray-600'}`} 
+      />
+    ));
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'completed': return <CheckCircle className="w-5 h-5 text-green-400" />;
+      case 'doing': return <Clock className="w-5 h-5 text-blue-400" />;
+      default: return <XCircle className="w-5 h-5 text-gray-400" />;
+    }
+  };
+
+  const getTierColor = (tier) => {
+    switch (tier) {
+      case 'bronze': return 'border-amber-600 bg-gradient-to-br from-amber-900/40 to-amber-800/20';
+      case 'silver': return 'border-gray-400 bg-gradient-to-br from-gray-800/40 to-gray-700/20';
+      case 'gold': return 'border-yellow-400 bg-gradient-to-br from-yellow-900/40 to-yellow-800/20';
+      case 'legendary': return 'border-purple-400 bg-gradient-to-br from-purple-900/40 to-purple-800/20';
+      default: return 'border-gray-600 bg-gradient-to-br from-gray-800/40 to-gray-700/20';
+    }
+  };
+
+  const getStatIcon = (stat) => {
+    const icons = {
+      WILL: Crown,
+      PHY: Dumbbell,
+      INT: Brain,
+      AWR: Eye,
+      EXE: Zap
+    };
+    return icons[stat];
+  };
+
+  const getStatName = (stat) => {
+    const names = {
+      WILL: 'Ý chí',
+      PHY: 'Thể chất',
+      INT: 'Trí tuệ',
+      AWR: 'Nhận thức',
+      EXE: 'Thực thi'
+    };
+    return names[stat];
+  };
+
+  const getLinkedGoal = (linkedGoal) => {
+    if (!linkedGoal) return null;
+    const goal = goals[linkedGoal.type]?.keyResults?.find(kr => kr.id === linkedGoal.id);
+    return goal ? `${linkedGoal.type.toUpperCase()}: ${goal.name}` : null;
+  };
+
+  const StatsRadarChart = ({ stats }) => {
+    const centerX = 120;
+    const centerY = 120;
+    const radius = 80;
+    const statEntries = Object.entries(stats);
+    const angleStep = (2 * Math.PI) / statEntries.length;
+    
+    const getPoint = (value, index, maxRadius = radius) => {
+      const angle = (index * angleStep) - (Math.PI / 2);
+      const distance = (value / 20) * maxRadius;
+      return {
+        x: centerX + Math.cos(angle) * distance,
+        y: centerY + Math.sin(angle) * distance
+      };
+    };
+    
+    const gridLevels = [4, 8, 12, 16, 20];
+    
+    return (
+      <div className="bg-gray-800/60 rounded-3xl p-6 backdrop-blur-xl border border-gray-600/30 shadow-xl">
+        <h3 className="text-xl font-bold text-white mb-4 text-center">Biểu đồ năng lực</h3>
+        <div className="flex justify-center">
+          <svg width="240" height="240" className="overflow-visible">
+            {gridLevels.map((level, i) => {
+              const points = statEntries.map((_, index) => getPoint(level, index)).map(p => `${p.x},${p.y}`).join(' ');
+              return (
+                <polygon
+                  key={level}
+                  points={points}
+                  fill="none"
+                  stroke="rgba(156, 163, 175, 0.2)"
+                  strokeWidth="1"
+                />
+              );
+            })}
+            
+            {statEntries.map((_, index) => {
+              const point = getPoint(20, index);
+              return (
+                <line
+                  key={index}
+                  x1={centerX}
+                  y1={centerY}
+                  x2={point.x}
+                  y2={point.y}
+                  stroke="rgba(156, 163, 175, 0.3)"
+                  strokeWidth="1"
+                />
+              );
+            })}
+            
+            <polygon
+              points={statEntries.map(([stat, data], index) => {
+                const point = getPoint(data.value, index);
+                return `${point.x},${point.y}`;
+              }).join(' ')}
+              fill="rgba(59, 130, 246, 0.3)"
+              stroke="rgba(59, 130, 246, 0.8)"
+              strokeWidth="2"
+            />
+            
+            {statEntries.map(([stat, data], index) => {
+              const point = getPoint(data.value, index);
+              return (
+                <g key={stat}>
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r="6"
+                    fill="#3b82f6"
+                    stroke="white"
+                    strokeWidth="2"
+                  />
+                </g>
+              );
+            })}
+            
+            {statEntries.map(([stat, data], index) => {
+              const labelPoint = getPoint(20, index, radius + 30);
+              return (
+                <g key={`label-${stat}`}>
+                  <text
+                    x={labelPoint.x}
+                    y={labelPoint.y - 8}
+                    textAnchor="middle"
+                    fill="white"
+                    fontSize="12"
+                    fontWeight="500"
+                  >
+                    {getStatName(stat)}
+                  </text>
+                  <text
+                    x={labelPoint.x}
+                    y={labelPoint.y + 8}
+                    textAnchor="middle"
+                    fill="#3b82f6"
+                    fontSize="14"
+                    fontWeight="bold"
+                  >
+                    {data.value}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      </div>
+    );
+  };
+
+  const EnhancedExpBar = ({ current, max, level, showLevel = true }) => {
+    const percentage = (current / max) * 100;
+    
+    return (
+      <div className="relative">
+        {showLevel && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-gray-400">Level {level}</span>
+            <span className="text-sm text-gray-400">Level {level + 1}</span>
+          </div>
+        )}
+        <div className="relative bg-gray-800/60 rounded-full h-6 overflow-hidden shadow-inner border border-gray-700/50">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 animate-pulse"></div>
+          
+          <div 
+            className="relative h-6 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full transition-all duration-1000 ease-out flex items-center justify-center overflow-hidden"
+            style={{ width: `${percentage}%` }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
+            
+            <div className="absolute inset-0">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 h-1 bg-white/60 rounded-full animate-bounce"
+                  style={{
+                    left: `${20 + i * 25}%`,
+                    animationDelay: `${i * 0.5}s`,
+                    animationDuration: '2s'
+                  }}
+                />
+              ))}
+            </div>
+            
+            <span className="relative z-10 text-white text-sm font-bold drop-shadow-lg">
+              {Math.round(percentage)}%
+            </span>
+          </div>
+          
+          {[25, 50, 75].map(milestone => (
+            <div
+              key={milestone}
+              className="absolute top-0 bottom-0 w-0.5 bg-white/30"
+              style={{ left: `${milestone}%` }}
+            />
+          ))}
+        </div>
+        
+        <div className="flex justify-between items-center mt-2">
+          <span className="text-xs text-gray-400">{current.toLocaleString()} EXP</span>
+          <span className="text-xs text-gray-400">{max.toLocaleString()} EXP</span>
+        </div>
+      </div>
+    );
+  };
+
+  const renderDashboard = () => (
+    <div className="space-y-6 pb-6">
+      <div className="bg-gradient-to-br from-blue-900/70 to-purple-900/70 rounded-3xl p-8 text-center backdrop-blur-xl border border-blue-500/30 shadow-2xl">
+        <div className="text-8xl mb-4 filter drop-shadow-lg">{character.avatar}</div>
+        <h2 className="text-3xl font-bold text-white mb-2">{character.name}</h2>
+        <div className="text-blue-200 text-lg mb-1">{currentAge} tuổi</div>
+        <div className="text-yellow-400 font-bold text-2xl mb-6">Level {character.level}</div>
+        
+        <div className="mb-4">
+          <EnhancedExpBar 
+            current={character.exp} 
+            max={character.expToNext} 
+            level={character.level}
+          />
+        </div>
+      </div>
+
+      <StatsRadarChart stats={character.stats} />
+
+      <div className="bg-gray-800/60 rounded-3xl p-6 backdrop-blur-xl border border-gray-600/30 shadow-xl">
+        <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+          <Sword className="w-6 h-6 mr-2 text-orange-400" />
+          Nhiệm vụ đang thực hiện
+        </h3>
+        <div className="space-y-4">
+          {quests.filter(q => q.status === 'doing').length > 0 ? (
+            quests.filter(q => q.status === 'doing').map(quest => (
+              <div key={quest.id} className="bg-gradient-to-r from-gray-700/60 to-gray-800/40 rounded-2xl p-4 border border-gray-600/40">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center mb-2">
+                      {getStatusIcon(quest.status)}
+                      <h4 className="text-white font-semibold ml-2">{quest.name}</h4>
+                    </div>
+                    <p className="text-gray-300 text-sm mb-2">{quest.description}</p>
+                    {getLinkedGoal(quest.linkedGoal) && (
+                      <div className="flex items-center text-xs text-blue-300">
+                        <Link className="w-3 h-3 mr-1" />
+                        {getLinkedGoal(quest.linkedGoal)}
+                      </div>
+                    )}
+                  </div>
+                  <button 
+                    onClick={() => handleCompleteQuest(quest.id)}
+                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm ml-3 transition-all"
+                  >
+                    Hoàn thành
+                  </button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex">
+                    {getDifficultyStars(quest.difficulty)}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {new Date(quest.deadline).toLocaleDateString('vi-VN')}
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-8 bg-gray-700/20 rounded-2xl border-2 border-dashed border-gray-600">
+              <div className="text-gray-500 text-sm mb-3">Chưa có nhiệm vụ nào đang thực hiện</div>
+              <button 
+                onClick={() => setCurrentView('quests')}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm transition-all"
+              >
+                + Tạo nhiệm vụ đầu tiên
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-gray-800/60 rounded-3xl p-6 backdrop-blur-xl border border-gray-600/30 shadow-xl">
+        <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+          <Trophy className="w-6 h-6 mr-2 text-yellow-400" />
+          Danh hiệu mới nhất
+        </h3>
+        <div className="grid grid-cols-2 gap-4">
+          {achievements.filter(a => a.earned).length > 0 ? (
+            achievements.filter(a => a.earned).slice(-2).map(achievement => (
+              <div key={achievement.id} className={`rounded-2xl p-4 border-2 ${getTierColor(achievement.tier)} relative overflow-hidden`}>
+                <div className="text-center relative z-10">
+                  <div className="text-4xl mb-2">{achievement.icon}</div>
+                  <div className="text-white font-bold text-sm">{achievement.name}</div>
+                  <div className="text-gray-300 text-xs mt-1">{achievement.description}</div>
+                  {achievement.date && (
+                    <div className="text-xs text-gray-500 mt-2">{new Date(achievement.date).toLocaleDateString('vi-VN')}</div>
+                  )}
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
+              </div>
+            ))
+          ) : (
+            <div className="col-span-2 text-center py-8 bg-gray-700/20 rounded-2xl border-2 border-dashed border-gray-600">
+              <div className="text-gray-500 text-sm mb-3">Hoàn thành nhiệm vụ để mở khóa danh hiệu!</div>
+              <button 
+                onClick={() => setCurrentView('achievements')}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-xl text-sm transition-all"
+              >
+                Xem tất cả danh hiệu
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderCharacter = () => (
+    <div className="space-y-6 pb-6">
+      <div className="bg-gradient-to-br from-blue-900/70 to-purple-900/70 rounded-3xl p-8 text-center backdrop-blur-xl border border-blue-500/30 shadow-2xl">
+        <div className="text-9xl mb-6 filter drop-shadow-lg">{character.avatar}</div>
+        
+        <div className="mb-4">
+          {editingField === 'name' ? (
+            <div className="flex items-center justify-center space-x-2">
+              <input
+                type="text"
+                value={tempValue}
+                onChange={(e) => setTempValue(e.target.value)}
+                className="bg-gray-800/60 text-white text-2xl font-bold text-center rounded-xl px-4 py-2 border border-blue-400"
+                autoFocus
+              />
+              <button onClick={() => handleSave('name')} className="text-green-400 hover:text-green-300">
+                <Check className="w-6 h-6" />
+              </button>
+              <button onClick={handleCancel} className="text-red-400 hover:text-red-300">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center space-x-2">
+              <h2 className="text-3xl font-bold text-white">{character.name}</h2>
+              <button onClick={() => handleEdit('name', character.name)} className="text-gray-400 hover:text-white">
+                <Edit3 className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="mb-4">
+          {editingField === 'birthYear' ? (
+            <div className="flex items-center justify-center space-x-2">
+              <input
+                type="number"
+                value={tempValue}
+                onChange={(e) => setTempValue(e.target.value)}
+                className="bg-gray-800/60 text-white text-lg text-center rounded-xl px-4 py-2 border border-blue-400 w-24"
+                autoFocus
+              />
+              <button onClick={() => handleSave('birthYear')} className="text-green-400 hover:text-green-300">
+                <Check className="w-5 h-5" />
+              </button>
+              <button onClick={handleCancel} className="text-red-400 hover:text-red-300">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center space-x-2">
+              <div className="text-blue-200 text-lg">{currentAge} tuổi (sinh {character.birthYear})</div>
+              <button onClick={() => handleEdit('birthYear', character.birthYear)} className="text-gray-400 hover:text-white">
+                <Edit3 className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="text-yellow-400 font-bold text-2xl mb-6">Level {character.level}</div>
+        
+        <EnhancedExpBar 
+          current={character.exp} 
+          max={character.expToNext} 
+          level={character.level}
+        />
+      </div>
+
+      <div className="bg-gray-800/60 rounded-3xl p-6 backdrop-blur-xl border border-gray-600/30 shadow-xl">
+        <h3 className="text-2xl font-bold text-white mb-6 text-center">Phân tích chỉ số chi tiết</h3>
+        <div className="space-y-6">
+          {Object.entries(character.stats).map(([stat, data]) => {
+            const Icon = getStatIcon(stat);
+            const percentage = (data.value / data.max) * 100;
+            const isStrength = data.value >= 15;
+            const isWeakness = data.value <= 10;
+            
+            return (
+              <div key={stat} className="bg-gray-700/40 rounded-2xl p-5 border border-gray-600/40">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <div className={`bg-gray-600/50 rounded-xl p-3 mr-4`}>
+                      <Icon className={`w-7 h-7 ${data.color}`} />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-white">{getStatName(stat)}</h4>
+                      <div className="flex items-center space-x-2">
+                        <span className={`text-2xl font-bold ${data.color}`}>{data.value}</span>
+                        <span className="text-gray-400">/ {data.max}</span>
+                        {isStrength && <div className="flex items-center text-green-400 text-sm"><TrendingUp className="w-4 h-4 mr-1" />Điểm mạnh</div>}
+                        {isWeakness && <div className="flex items-center text-red-400 text-sm"><TrendingDown className="w-4 h-4 mr-1" />Cần cải thiện</div>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="relative">
+                  <div className="bg-gray-800/60 rounded-full h-3 mb-2 overflow-hidden">
+                    <div 
+                      className={`h-3 rounded-full transition-all duration-700 bg-gradient-to-r ${data.color.replace('text-', 'from-')}/70 ${data.color.replace('text-', 'to-')}/30`}
+                      style={{ width: `${percentage}%` }}
+                    ></div>
+                  </div>
+                  <div className="text-right text-sm text-gray-400">{Math.round(percentage)}%</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="bg-gray-800/60 rounded-3xl p-6 backdrop-blur-xl border border-gray-600/30 shadow-xl">
+        <h3 className="text-2xl font-bold text-white mb-6 text-center flex items-center justify-center">
+          <TreePine className="w-7 h-7 mr-3 text-green-400" />
+          Cây kỹ năng
+        </h3>
+        <div className="grid grid-cols-2 gap-4">
+          {Object.entries(skillTree).map(([categoryId, category]) => {
+            const Icon = category.icon;
+            const expPercentage = (category.exp / category.expToNext) * 100;
+            
+            return (
+              <div key={categoryId} className="bg-gray-700/40 rounded-2xl p-4 border border-gray-600/40">
+                <div className="flex items-center mb-3">
+                  <Icon className={`w-6 h-6 mr-3 ${category.color}`} />
+                  <div>
+                    <h4 className="text-lg font-bold text-white">{category.name}</h4>
+                    <div className="text-sm text-gray-400">Level {category.level}</div>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-800/60 rounded-full h-2 mb-3 overflow-hidden">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-500 bg-gradient-to-r ${category.color.replace('text-', 'from-')}/70 ${category.color.replace('text-', 'to-')}/30`}
+                    style={{ width: `${expPercentage}%` }}
+                  />
+                </div>
+                
+                <div className="space-y-1">
+                  {category.topSkills.map((skill, index) => (
+                    <div key={index} className="text-xs text-gray-300 bg-gray-600/20 rounded px-2 py-1">
+                      {skill}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderQuests = () => (
+    <div className="space-y-6 pb-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-white">Nhiệm vụ & Thử thách</h2>
+        <button 
+          onClick={() => setShowAddQuest(true)}
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-2xl flex items-center shadow-lg"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Thêm nhiệm vụ
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <button 
+          onClick={() => setQuestView('active')}
+          className={`py-3 rounded-xl text-sm transition-all ${
+            questView === 'active' 
+              ? 'bg-blue-600 text-white' 
+              : 'bg-gray-700/50 hover:bg-gray-600/50 text-white'
+          }`}
+        >
+          Nhiệm vụ hiện tại ({quests.length})
+        </button>
+        <button 
+          onClick={() => setQuestView('vault')}
+          className={`py-3 rounded-xl text-sm transition-all flex items-center justify-center ${
+            questView === 'vault' 
+              ? 'bg-purple-600 text-white' 
+              : 'bg-gray-700/50 hover:bg-gray-600/50 text-white'
+          }`}
+        >
+          <Archive className="w-4 h-4 mr-2" />
+          Kho nhiệm vụ ({questVault.filter(q => q.unlocked).length})
+        </button>
+      </div>
+
+      {showAddQuest && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-3xl p-6 w-full max-w-lg border border-gray-600 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold text-white mb-4">Thêm nhiệm vụ mới</h3>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Tên nhiệm vụ"
+                value={newQuest.name}
+                onChange={(e) => setNewQuest(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full bg-gray-800 text-white px-4 py-3 rounded-xl border border-gray-600 focus:border-blue-400 focus:outline-none"
+              />
+              <textarea
+                placeholder="Mô tả nhiệm vụ"
+                value={newQuest.description}
+                onChange={(e) => setNewQuest(prev => ({ ...prev, description: e.target.value }))}
+                className="w-full bg-gray-800 text-white px-4 py-3 rounded-xl border border-gray-600 focus:border-blue-400 focus:outline-none resize-none"
+                rows={3}
+              />
+              
+              <div className="grid grid-cols-2 gap-3">
+                <select
+                  value={newQuest.difficulty}
+                  onChange={(e) => setNewQuest(prev => ({ ...prev, difficulty: parseInt(e.target.value) }))}
+                  className="bg-gray-800 text-white px-4 py-3 rounded-xl border border-gray-600 focus:border-blue-400 focus:outline-none"
+                >
+                  {[1, 2, 3, 4, 5].map(level => (
+                    <option key={level} value={level}>Độ khó: {level} sao</option>
+                  ))}
+                </select>
+                <input
+                  type="date"
+                  value={newQuest.deadline}
+                  onChange={(e) => setNewQuest(prev => ({ ...prev, deadline: e.target.value }))}
+                  className="bg-gray-800 text-white px-4 py-3 rounded-xl border border-gray-600 focus:border-blue-400 focus:outline-none"
+                />
+              </div>
+            </div>
+            
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={handleAddQuest}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-medium transition-all"
+              >
+                Thêm nhiệm vụ
+              </button>
+              <button
+                onClick={() => setShowAddQuest(false)}
+                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-xl font-medium transition-all"
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {questView === 'active' ? (
+        <div className="space-y-4">
+          {quests.map(quest => (
+            <div key={quest.id} className="bg-gradient-to-br from-gray-800/70 to-gray-900/50 rounded-3xl p-6 backdrop-blur-xl border border-gray-600/40 shadow-xl">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center flex-1">
+                  {getStatusIcon(quest.status)}
+                  <div className="ml-4 flex-1">
+                    <h3 className="text-xl font-bold text-white mb-2">{quest.name}</h3>
+                    <p className="text-gray-300 text-sm mb-3">{quest.description}</p>
+                    
+                    {getLinkedGoal(quest.linkedGoal) && (
+                      <div className="flex items-center bg-blue-900/30 rounded-xl p-2 mb-3">
+                        <Link className="w-4 h-4 mr-2 text-blue-400" />
+                        <span className="text-blue-300 text-sm">{getLinkedGoal(quest.linkedGoal)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex space-x-2 ml-4">
+                  {quest.status === 'doing' && (
+                    <button 
+                      onClick={() => handleCompleteQuest(quest.id)}
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm transition-all"
+                    >
+                      Hoàn thành
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => handleDeleteQuest(quest.id)}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="bg-gray-700/40 rounded-xl p-3">
+                  <div className="text-gray-400 text-xs mb-1">Độ khó</div>
+                  <div className="flex">
+                    {getDifficultyStars(quest.difficulty)}
+                  </div>
+                </div>
+                <div className="bg-gray-700/40 rounded-xl p-3">
+                  <div className="text-gray-400 text-xs mb-1">Deadline</div>
+                  <div className="text-white text-sm font-medium">
+                    {new Date(quest.deadline).toLocaleDateString('vi-VN')}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gradient-to-r from-green-900/30 to-blue-900/30 rounded-xl p-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <span className="text-gray-400 text-sm">Yêu cầu: </span>
+                    <span className="text-blue-400 font-medium">{quest.requiredStat}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 text-sm">Phần thưởng: </span>
+                    <span className="text-green-400 font-medium">{quest.reward}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="text-center text-gray-400 text-sm mb-4">
+            Những nhiệm vụ này sẽ mở khóa khi bạn đạt đủ điều kiện
+          </div>
+          
+          {questVault
+            .sort((a, b) => {
+              if (a.unlocked !== b.unlocked) return b.unlocked - a.unlocked;
+              return a.requiredLevel - b.requiredLevel;
+            })
+            .map(vaultQuest => (
+            <div key={vaultQuest.id} className={`rounded-3xl p-6 backdrop-blur-xl border shadow-xl ${
+              vaultQuest.unlocked 
+                ? 'bg-gradient-to-br from-purple-800/50 to-blue-800/50 border-purple-500/40' 
+                : 'bg-gradient-to-br from-gray-800/30 to-gray-900/30 border-gray-600/40 opacity-60'
+            }`}>
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center flex-1">
+                  {vaultQuest.unlocked ? (
+                    <Unlock className="w-6 h-6 text-green-400" />
+                  ) : (
+                    <Lock className="w-6 h-6 text-gray-500" />
+                  )}
+                  <div className="ml-4 flex-1">
+                    <h3 className="text-xl font-bold text-white mb-2">{vaultQuest.name}</h3>
+                    <p className="text-gray-300 text-sm mb-3">{vaultQuest.description}</p>
+                    <div className="bg-gray-700/40 rounded-xl p-3 mb-3">
+                      <div className="text-gray-400 text-xs mb-1">Điều kiện mở khóa:</div>
+                      <div className="text-yellow-300 text-sm">{vaultQuest.condition}</div>
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="text-gray-500 text-xs">Yêu cầu level: {vaultQuest.requiredLevel}</div>
+                        <div className={`text-xs ${character.level >= vaultQuest.requiredLevel ? 'text-green-400' : 'text-red-400'}`}>
+                          Hiện tại: Level {character.level}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {vaultQuest.unlocked && (
+                  <button 
+                    onClick={() => handleUnlockVaultQuest(vaultQuest.id)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-sm transition-all ml-4 flex items-center"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Nhận nhiệm vụ
+                  </button>
+                )}
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-700/40 rounded-xl p-3">
+                  <div className="text-gray-400 text-xs mb-1">Độ khó</div>
+                  <div className="flex">
+                    {getDifficultyStars(vaultQuest.difficulty)}
+                  </div>
+                </div>
+                <div className="bg-gray-700/40 rounded-xl p-3">
+                  <div className="text-gray-400 text-xs mb-1">Phần thưởng</div>
+                  <div className="text-green-400 text-sm font-medium">{vaultQuest.reward}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderAchievements = () => (
+    <div className="space-y-6 pb-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-white">Bộ sưu tập danh hiệu</h2>
+        <div className="text-sm text-gray-400">
+          {achievements.filter(a => a.earned).length}/{achievements.length} đã đạt
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4">
+        {achievements.map(achievement => (
+          <div 
+            key={achievement.id} 
+            className={`rounded-3xl p-6 border-2 ${getTierColor(achievement.tier)} ${
+              achievement.earned ? 'opacity-100 shadow-xl' : 'opacity-50'
+            } backdrop-blur-xl relative overflow-hidden transition-all duration-300 hover:scale-105`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
+            
+            <div className="text-center relative z-10">
+              <div className="text-6xl mb-4 filter drop-shadow-lg">{achievement.icon}</div>
+              <h3 className="text-lg font-bold text-white mb-2">{achievement.name}</h3>
+              <p className="text-gray-300 text-sm mb-4">{achievement.description}</p>
+              
+              <div className="flex items-center justify-center space-x-2 mb-3">
+                <div className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                  achievement.earned 
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white' 
+                    : 'bg-gray-600 text-gray-300'
+                }`}>
+                  {achievement.earned ? 'Đã đạt' : 'Chưa đạt'}
+                </div>
+                
+                <div className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                  achievement.tier === 'bronze' ? 'bg-amber-600/30 text-amber-300' :
+                  achievement.tier === 'silver' ? 'bg-gray-500/30 text-gray-300' :
+                  achievement.tier === 'gold' ? 'bg-yellow-500/30 text-yellow-300' :
+                  'bg-purple-500/30 text-purple-300'
+                }`}>
+                  {achievement.tier.toUpperCase()}
+                </div>
+              </div>
+              
+              {achievement.date && (
+                <div className="text-xs text-gray-500">
+                  {new Date(achievement.date).toLocaleDateString('vi-VN')}
+                </div>
+              )}
+            </div>
+
+            {achievement.earned && (
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 -translate-x-full animate-pulse"></div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-gray-800/60 rounded-3xl p-6 backdrop-blur-xl border border-gray-600/30 shadow-xl">
+        <h3 className="text-lg font-bold text-white mb-4">Thống kê danh hiệu</h3>
+        <div className="grid grid-cols-4 gap-4">
+          {['bronze', 'silver', 'gold', 'legendary'].map(tier => {
+            const tierAchievements = achievements.filter(a => a.tier === tier);
+            const earnedCount = tierAchievements.filter(a => a.earned).length;
+            return (
+              <div key={tier} className="text-center">
+                <div className={`text-2xl font-bold ${
+                  tier === 'bronze' ? 'text-amber-400' :
+                  tier === 'silver' ? 'text-gray-400' :
+                  tier === 'gold' ? 'text-yellow-400' :
+                  'text-purple-400'
+                }`}>
+                  {earnedCount}/{tierAchievements.length}
+                </div>
+                <div className="text-xs text-gray-400 capitalize">{tier}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderResources = () => (
+    <div className="space-y-6 pb-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-white">Nguồn vốn thực tế</h2>
+      </div>
+      
+      <div className="space-y-6">
+        {resources.map(resource => {
+          const Icon = resource.icon;
+          const resourceQuests = quests.filter(q => q.category === resource.id);
+          
+          return (
+            <div key={resource.id} className="bg-gradient-to-br from-gray-800/70 to-gray-900/50 rounded-3xl p-6 backdrop-blur-xl border border-gray-600/40 shadow-xl">
+              <div className="flex items-center mb-6">
+                <div className={`bg-gray-700/50 rounded-2xl p-4 mr-4 ${resource.color.replace('text-', 'bg-')}/10`}>
+                  <Icon className={`w-8 h-8 ${resource.color}`} />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-white">{resource.name}</h3>
+                  <p className="text-gray-400">{resource.description}</p>
+                </div>
+              </div>
+              
+              <div className="bg-gray-700/30 rounded-2xl p-5 mb-5">
+                <h4 className="text-lg font-semibold text-white mb-4">Tài sản hiện tại:</h4>
+                <div className="space-y-3">
+                  {resource.items.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-600/30 rounded-xl p-3">
+                      {editingResource?.resourceId === resource.id && editingResource?.itemIndex === index ? (
+                        <div className="flex items-center space-x-2 flex-1">
+                          <input
+                            type="text"
+                            value={editingResource.value}
+                            onChange={(e) => setEditingResource(prev => ({ ...prev, value: e.target.value }))}
+                            className="flex-1 bg-gray-800/60 text-white px-3 py-2 rounded-lg border border-blue-400 text-sm"
+                            autoFocus
+                          />
+                          <button onClick={handleSaveResource} className="text-green-400 hover:text-green-300">
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => setEditingResource(null)} className="text-red-400 hover:text-red-300">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-gray-200 text-sm">{item}</span>
+                          <div className="flex space-x-2">
+                            <button 
+                              onClick={() => handleEditResource(resource.id, index)}
+                              className="text-gray-400 hover:text-white"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteResource(resource.id, index)}
+                              className="text-red-400 hover:text-red-300"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                  <button 
+                    onClick={() => handleAddResource(resource.id)}
+                    className="w-full bg-gray-600/40 hover:bg-gray-600/60 text-gray-300 py-3 rounded-xl text-sm border-2 border-dashed border-gray-500 transition-all"
+                  >
+                    + Thêm tài sản mới
+                  </button>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="text-lg font-semibold text-white mb-4">Nhiệm vụ liên quan:</h4>
+                <div className="space-y-3">
+                  {resourceQuests.length > 0 ? (
+                    resourceQuests.map(quest => (
+                      <div key={quest.id} className="bg-gray-600/30 rounded-xl p-4 flex items-center justify-between">
+                        <div className="flex items-center">
+                          {getStatusIcon(quest.status)}
+                          <span className="ml-3 text-gray-200 text-sm">{quest.name}</span>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 bg-gray-700/20 rounded-xl border-2 border-dashed border-gray-600">
+                      <div className="text-gray-500 text-sm mb-3">Chưa có nhiệm vụ nào cho lĩnh vực này</div>
+                      <button 
+                        onClick={() => createQuestFromResource(resource.id)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm transition-all"
+                      >
+                        + Tạo nhiệm vụ mới
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const renderGoals = () => (
+    <div className="space-y-6 pb-6">
+      <h2 className="text-2xl font-bold text-white">Mục tiêu & OKR</h2>
+      
+      <div className="bg-gradient-to-r from-purple-900/70 to-blue-900/70 rounded-3xl p-8 border border-purple-500/40 backdrop-blur-xl shadow-2xl">
+        <h3 className="text-2xl font-bold text-white mb-4 flex items-center">
+          <Crown className="w-8 h-8 mr-3 text-yellow-400" />
+          Sứ mệnh cuộc đời
+        </h3>
+        {editingField === 'mission' ? (
+          <div className="flex items-center space-x-3">
+            <textarea
+              value={tempValue}
+              onChange={(e) => setTempValue(e.target.value)}
+              className="flex-1 bg-gray-800/60 text-white text-lg rounded-2xl px-4 py-3 border border-blue-400 resize-none"
+              rows={3}
+              autoFocus
+            />
+            <div className="flex flex-col space-y-2">
+              <button onClick={() => handleSave('mission')} className="text-green-400 hover:text-green-300">
+                <Check className="w-6 h-6" />
+              </button>
+              <button onClick={handleCancel} className="text-red-400 hover:text-red-300">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start justify-between">
+            <p className="text-xl text-purple-100 leading-relaxed flex-1">{goals.mission}</p>
+            <button onClick={() => handleEdit('mission', goals.mission)} className="text-gray-400 hover:text-white ml-3">
+              <Edit3 className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {['yearly', 'quarterly', 'monthly', 'weekly'].map((period) => {
+        const goalData = goals[period];
+        const periodNames = {
+          yearly: { name: 'Mục tiêu năm', icon: Calendar, color: 'text-green-400' },
+          quarterly: { name: 'Mục tiêu quý', icon: TrendingUp, color: 'text-blue-400' },
+          monthly: { name: 'Mục tiêu tháng', icon: Target, color: 'text-yellow-400' },
+          weekly: { name: 'Mục tiêu tuần', icon: Clock, color: 'text-orange-400' }
+        };
+        const config = periodNames[period];
+        const Icon = config.icon;
+
+        return (
+          <div key={period} className="bg-gray-800/60 rounded-3xl p-6 backdrop-blur-xl border border-gray-600/40 shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white flex items-center">
+                <Icon className={`w-6 h-6 mr-3 ${config.color}`} />
+                {config.name}
+              </h3>
+              <button className="text-gray-400 hover:text-white">
+                <Edit3 className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-gray-700/40 rounded-2xl p-5 mb-5">
+              <h4 className="text-lg font-semibold text-white mb-2">Mục tiêu chính:</h4>
+              <p className="text-gray-200">{goalData.objective}</p>
+            </div>
+
+            <div>
+              <h4 className="text-lg font-semibold text-white mb-4">Kết quả then chốt:</h4>
+              <div className="space-y-4">
+                {goalData.keyResults.map(kr => (
+                  <div key={kr.id} className="bg-gray-700/30 rounded-2xl p-5">
+                    <div className="flex justify-between items-center mb-3">
+                      <h5 className="text-white font-medium flex-1">{kr.name}</h5>
+                      <span className="text-sm text-gray-400 ml-3">{kr.target}</span>
+                    </div>
+                    <div className="relative">
+                      <div className="bg-gray-800 rounded-full h-4 mb-2 overflow-hidden">
+                        <div 
+                          className={`h-4 rounded-full transition-all duration-700 bg-gradient-to-r ${config.color.replace('text-', 'from-')}/70 ${config.color.replace('text-', 'to-')}/30 flex items-center justify-end pr-2`}
+                          style={{ width: `${kr.progress}%` }}
+                        >
+                          <span className="text-white text-xs font-bold">{kr.progress}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {showAddKeyResult === period ? (
+                  <div className="bg-gray-700/30 rounded-2xl p-5 border-2 border-blue-500/50">
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        placeholder="Tên key result"
+                        value={newKeyResult.name}
+                        onChange={(e) => setNewKeyResult(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full bg-gray-800/60 text-white px-4 py-3 rounded-xl border border-gray-600 focus:border-blue-400 focus:outline-none"
+                        autoFocus
+                      />
+                      <input
+                        type="text"
+                        placeholder="Target (VD: 31/12/2025)"
+                        value={newKeyResult.target}
+                        onChange={(e) => setNewKeyResult(prev => ({ ...prev, target: e.target.value }))}
+                        className="w-full bg-gray-800/60 text-white px-4 py-3 rounded-xl border border-gray-600 focus:border-blue-400 focus:outline-none"
+                      />
+                      <div className="flex space-x-3">
+                        <button
+                          onClick={() => handleAddKeyResult(period)}
+                          className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-medium transition-all"
+                        >
+                          Thêm
+                        </button>
+                        <button
+                          onClick={() => setShowAddKeyResult(null)}
+                          className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-xl font-medium transition-all"
+                        >
+                          Hủy
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => setShowAddKeyResult(period)}
+                    className="w-full bg-gray-600/40 hover:bg-gray-600/60 text-gray-300 py-4 rounded-2xl text-sm border-2 border-dashed border-gray-500 transition-all"
+                  >
+                    + Thêm Key Result mới
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const renderSettings = () => (
+    <div className="space-y-6 pb-6">
+      <h2 className="text-2xl font-bold text-white">Cài đặt hệ thống</h2>
+      
+      <div className="bg-gray-800/60 rounded-3xl p-6 backdrop-blur-xl border border-gray-600/30 shadow-xl">
+        <h3 className="text-xl font-bold text-white mb-6">Kết nối Google Sheets</h3>
+        <div className="space-y-5">
+          <div className="bg-gray-700/40 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <div className="text-white font-semibold text-lg">Google Sheets API</div>
+                <div className="text-gray-400 text-sm">Đồng bộ dữ liệu với Google Sheets</div>
+                {isConnected ? (
+                  <div className="text-green-400 text-xs mt-1">● Đã kết nối - Sẵn sàng đồng bộ</div>
+                ) : (
+                  <div className="text-gray-500 text-xs mt-1">● Chưa kết nối</div>
+                )}
+              </div>
+              <button 
+                onClick={connectGoogleSheets}
+                className={`px-6 py-3 rounded-xl font-medium transition-all ${
+                  isConnected 
+                    ? 'bg-green-600 hover:bg-green-700 text-white' 
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+              >
+                {isConnected ? 'Đã kết nối' : 'Kết nối'}
+              </button>
+            </div>
+            <input
+              type="text"
+              placeholder="Google Sheets URL"
+              value={sheetsUrl}
+              onChange={(e) => setSheetsUrl(e.target.value)}
+              className="w-full bg-gray-800/60 text-white px-4 py-3 rounded-xl border border-gray-600 focus:border-blue-400 focus:outline-none"
+            />
+            {isConnected && (
+              <div className="mt-4 p-4 bg-green-900/30 rounded-xl border border-green-500/30">
+                <div className="text-green-400 text-sm font-medium mb-2">✓ Kết nối thành công!</div>
+                <div className="text-green-300 text-xs">
+                  Khung database đã được tạo. Copy dữ liệu JSON từ console hoặc sử dụng nút xuất dữ liệu bên dưới.
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="bg-gray-700/40 rounded-2xl p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-white font-semibold">Tự động đồng bộ</div>
+                <div className="text-gray-400 text-sm">Đồng bộ dữ liệu mỗi khi có thay đổi</div>
+              </div>
+              <div className="relative">
+                <input type="checkbox" className="sr-only" defaultChecked />
+                <div className="w-14 h-7 bg-green-600 rounded-full relative transition-all cursor-pointer">
+                  <div className="w-6 h-6 bg-white rounded-full absolute top-0.5 right-0.5 transition-all shadow-lg"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gray-800/60 rounded-3xl p-6 backdrop-blur-xl border border-gray-600/30 shadow-xl">
+        <h3 className="text-xl font-bold text-white mb-6">Thông báo</h3>
+        <div className="space-y-5">
+          {[
+            { name: 'Nhắc nhở nhiệm vụ', desc: 'Thông báo khi đến deadline', enabled: true },
+            { name: 'Danh hiệu mới', desc: 'Thông báo khi đạt achievement', enabled: true },
+            { name: 'Cập nhật EXP', desc: 'Thông báo khi hoàn thành nhiệm vụ', enabled: false },
+            { name: 'Báo cáo tiến độ', desc: 'Báo cáo tuần/tháng tự động', enabled: true }
+          ].map((setting, index) => (
+            <div key={index} className="bg-gray-700/40 rounded-2xl p-5 flex items-center justify-between">
+              <div>
+                <div className="text-white font-medium">{setting.name}</div>
+                <div className="text-gray-400 text-sm">{setting.desc}</div>
+              </div>
+              <div className="relative">
+                <input type="checkbox" className="sr-only" defaultChecked={setting.enabled} />
+                <div className={`w-14 h-7 rounded-full relative transition-all cursor-pointer ${setting.enabled ? 'bg-green-600' : 'bg-gray-600'}`}>
+                  <div className={`w-6 h-6 bg-white rounded-full absolute top-0.5 transition-all shadow-lg ${setting.enabled ? 'right-0.5' : 'left-0.5'}`}></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-gray-800/60 rounded-3xl p-6 backdrop-blur-xl border border-gray-600/30 shadow-xl">
+        <h3 className="text-xl font-bold text-white mb-6">Dữ liệu & Backup</h3>
+        <div className="space-y-4">
+          <button 
+            onClick={() => {
+              const data = { character, quests, achievements, resources, goals, skillTree };
+              const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `levelup-data-${new Date().toISOString().split('T')[0]}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-medium transition-all"
+          >
+            📥 Xuất dữ liệu ra JSON
+          </button>
+          <button className="w-full bg-orange-600 hover:bg-orange-700 text-white py-4 rounded-2xl font-medium transition-all">
+            📤 Nhập dữ liệu từ file
+          </button>
+          <button 
+            onClick={() => {
+              if (confirm('Bạn có chắc muốn đặt lại toàn bộ dữ liệu? Hành động này không thể hoàn tác.')) {
+                window.location.reload();
+              }
+            }}
+            className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-medium transition-all"
+          >
+            🗑️ Đặt lại toàn bộ dữ liệu
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderCurrentView = () => {
+    switch (currentView) {
+      case 'character': return renderCharacter();
+      case 'quests': return renderQuests();
+      case 'achievements': return renderAchievements();
+      case 'resources': return renderResources();
+      case 'goals': return renderGoals();
+      case 'settings': return renderSettings();
+      default: return renderDashboard();
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 pb-24">
+      <div className="h-12 bg-transparent"></div>
+      
+      <div className="sticky top-0 bg-gray-900/90 backdrop-blur-xl border-b border-gray-700/50 px-6 py-4 z-40">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="text-3xl">{character.avatar}</div>
+            <div>
+              <div className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                Level Up ✨
+              </div>
+              <div className="text-sm text-gray-400">{character.name} • {currentAge} tuổi</div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-3">
+            <div className="text-right">
+              <div className="text-sm font-bold text-yellow-400">Level {character.level}</div>
+              <div className="text-xs text-gray-400">{Math.round(expPercentage)}% EXP</div>
+            </div>
+            {currentView !== 'settings' && (
+              <button 
+                onClick={() => setCurrentView('settings')}
+                className="text-gray-400 hover:text-white transition-all"
+              >
+                <Settings className="w-6 h-6" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <main className="px-6 py-8">
+        {renderCurrentView()}
+      </main>
+
+      <nav className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-xl border-t border-gray-700/50 px-2 py-3 z-50">
+        <div className="flex justify-around items-center">
+          {[
+            { id: 'dashboard', icon: Home, label: 'Trang chủ' },
+            { id: 'character', icon: User, label: 'Nhân vật' },
+            { id: 'quests', icon: Sword, label: 'Nhiệm vụ' },
+            { id: 'achievements', icon: Trophy, label: 'Danh hiệu' },
+            { id: 'resources', icon: Shield, label: 'Nguồn vốn' },
+            { id: 'goals', icon: Target, label: 'Mục tiêu' }
+          ].map(item => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setCurrentView(item.id)}
+                className={`flex flex-col items-center py-2 px-1 min-w-0 transition-all duration-300 ${
+                  currentView === item.id 
+                    ? 'text-blue-400 transform scale-110' 
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <Icon className="w-5 h-5 mb-1" />
+                <span className="text-xs truncate w-full text-center">{item.label}</span>
+                {currentView === item.id && (
+                  <div className="w-1 h-1 bg-blue-400 rounded-full mt-1"></div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
+      <div className="fixed bottom-28 right-6 z-50">
+        <button
+          onClick={() => setShowChat(!showChat)}
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-full p-4 shadow-2xl transition-all duration-300 hover:scale-110"
+        >
+          <MessageCircle className="w-6 h-6" />
+        </button>
+        
+        {showChat && (
+          <div className="absolute bottom-16 right-0 w-80 max-w-[calc(100vw-3rem)] h-96 bg-gray-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-600/50 flex flex-col overflow-hidden">
+            <div className="p-5 border-b border-gray-600/50">
+              <h3 className="text-white font-bold text-lg">Chat với bản thân 💭</h3>
+            </div>
+            <div className="flex-1 p-5 overflow-y-auto">
+              {chatMessages.length > 0 ? (
+                <div className="space-y-3">
+                  {chatMessages.map(msg => (
+                    <div key={msg.id} className="bg-blue-600/20 rounded-2xl p-3">
+                      <div className="text-white text-sm">{msg.text}</div>
+                      <div className="text-xs text-gray-400 mt-1">{msg.timestamp}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-gray-400 text-sm italic text-center">
+                  Ghi chú nhanh, tự trò chuyện với bản thân...
+                </div>
+              )}
+            </div>
+            <div className="p-5 border-t border-gray-600/50">
+              <div className="flex">
+                <input
+                  type="text"
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  placeholder="Nhập tin nhắn..."
+                  className="flex-1 bg-gray-800/60 text-white px-4 py-3 rounded-l-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                />
+                <button
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-r-2xl transition-all"
+                  onClick={handleSendMessage}
+                >
+                  Gửi
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default LevelUpApp;
